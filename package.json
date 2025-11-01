@@ -1,7 +1,7 @@
 {
-  "name": "copilot-debugger",
-  "displayName": "Copilot Debugger",
-  "description": "Use GitHub Copilot to automate starting, inspecting and resuming VS Code debug sessions (breakpoints, call stacks, variables).",
+  "name": "copilot-breakpoint-debugger",
+  "displayName": "Copilot Breakpoint Debugger",
+  "description": "Use GitHub Copilot to automate starting, inspecting and resuming VS Code debug sessions with conditional breakpoints, hit conditions, and logpoints.",
   "version": "0.0.1",
   "publisher": "dkattan",
   "preview": true,
@@ -37,7 +37,7 @@
   "main": "./out/extension.js",
   "contributes": {
     "configuration": {
-      "title": "Copilot Debugger",
+      "title": "Copilot Breakpoint Debugger",
       "properties": {
         "copilot-debugger.defaultLaunchConfiguration": {
           "type": "string",

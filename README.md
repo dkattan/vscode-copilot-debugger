@@ -1,6 +1,6 @@
-# Copilot Debugger (Preview)
+# Copilot Breakpoint Debugger (Preview)
 
-Use GitHub Copilot (or any LM-enabled workflow in VS Code) to start, inspect, and resume debug sessions automatically.
+Use GitHub Copilot (or any LM-enabled workflow in VS Code) to start, inspect, and resume debug sessions automatically with conditional breakpoints, hit conditions, and logpoints.
 
 ## ✨ Features
 
