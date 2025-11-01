@@ -30,6 +30,7 @@ code test-workspace.code-workspace
 ```
 
 This workspace includes:
+
 - Both workspaces (a and b) loaded simultaneously
 - Individual launch configurations for each workspace
 - **Compound launch configuration** that debugs both at once
@@ -56,11 +57,13 @@ Set a breakpoint on line 1 of either test file and start debugging.
 ### 2. Conditional Breakpoints
 
 **PowerShell (`test.ps1` line 8):**
+
 ```
 condition: $i -ge 3
 ```
 
 **Node.js (`test.js` line 9):**
+
 ```
 condition: i >= 3
 ```
@@ -68,6 +71,7 @@ condition: i >= 3
 ### 3. Hit Condition Breakpoints
 
 Trigger only on the 3rd hit:
+
 ```
 hitCondition: 3
 ```
@@ -75,11 +79,13 @@ hitCondition: 3
 ### 4. Logpoints
 
 **PowerShell:**
+
 ```
 logMessage: Loop iteration: {$i}
 ```
 
 **Node.js:**
+
 ```
 logMessage: Loop iteration: {i}
 ```
@@ -120,6 +126,7 @@ Run both tests using the compound configuration
 ## Test Scripts
 
 Both test scripts contain:
+
 - Console output with current directory
 - Random value generation
 - Loop with 5 iterations (lines 7-10 in PS1, lines 8-13 in JS)
