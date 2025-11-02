@@ -97,11 +97,11 @@ This repository includes a GitHub Actions workflow (`.github/workflows/ci.yml`) 
 To enable automated publishing, configure the following secrets in your GitHub repository settings:
 
 1. **`VSCE_PAT`** (required for marketplace publishing):
-   - Create a Personal Access Token at https://dev.azure.com/
+   - Create a Personal Access Token at <https://dev.azure.com/>
    - Organization: Create or use an existing Azure DevOps organization
    - Scope: `Marketplace` → `Manage` permission
    - Add this token as a repository secret named `VSCE_PAT`
-   - See: https://code.visualstudio.com/api/working-with-extensions/publishing-extension#get-a-personal-access-token
+   - See: <https://code.visualstudio.com/api/working-with-extensions/publishing-extension#get-a-personal-access-token>
 
 2. **`GITHUB_TOKEN`** (automatically provided):
    - GitHub automatically provides this for uploading VSIX to releases

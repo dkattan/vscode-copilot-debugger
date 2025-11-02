@@ -1,10 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { StartDebuggerTool } from '../startDebuggerTool';
-import {
-  POWERSHELL_EXTENSION_ID,
-  resolveWorkspaceFolder,
-} from './utils/debugTestUtils';
+import { resolveWorkspaceFolder } from './utils/debugTestUtils';
 import {
   getExtensionRoot,
   ensurePowerShellExtension,

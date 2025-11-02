@@ -251,11 +251,18 @@ export const waitForBreakpointHit = async (params: {
               targetSession = session;
             }
           } else if (sessionName) {
-            targetSession = availableSessions.find(s => s.name === sessionName);
+            // Allow prefix match because certain debug adapters append counters (e.g., "Run test.ps1 2")
+            targetSession = availableSessions.find(
+              s => s.name === sessionName || s.name.startsWith(sessionName)
+            );
           } else {
             targetSession = availableSessions[0]; // All active sessions if neither ID nor name provided
           }
-          if (targetSession !== undefined) {
+          const nameMatch = sessionName
+            ? event.sessionName === sessionName ||
+              event.sessionName.startsWith(sessionName)
+            : true;
+          if (targetSession !== undefined && nameMatch) {
             listener.dispose();
             terminateListener?.dispose();
             resolve(event);
@@ -272,7 +279,8 @@ export const waitForBreakpointHit = async (params: {
             const matches = sessionId
               ? endEvent.sessionId === sessionId
               : sessionName
-                ? endEvent.sessionName === sessionName
+                ? endEvent.sessionName === sessionName ||
+                  endEvent.sessionName.startsWith(sessionName)
                 : true;
             if (matches) {
               outputChannel.appendLine(
