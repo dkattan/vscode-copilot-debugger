@@ -47,9 +47,8 @@ async function main() {
 
     // Download VS Code and resolve CLI path using the official utility
     const vscodeExecutablePath = await downloadAndUnzipVSCode('stable');
-    const [cliPath] = resolveCliArgsFromVSCodeExecutablePath(
-      vscodeExecutablePath
-    );
+    const [cliPath] =
+      resolveCliArgsFromVSCodeExecutablePath(vscodeExecutablePath);
 
     const requiredExtensions = [
       'ms-vscode.PowerShell',
