@@ -21,8 +21,8 @@ export interface StartDebuggerResult {
 /** Resolve extension root path. */
 export function getExtensionRoot(): string {
   return (
-    vscode.extensions.getExtension('copilot-debugger')?.extensionPath ||
-    path.resolve(__dirname, '../../..')
+    vscode.extensions.getExtension('dkattan.copilot-breakpoint-debugger')
+      ?.extensionPath || path.resolve(__dirname, '../../..')
   );
 }
 
@@ -40,7 +40,9 @@ export async function ensurePowerShellExtension(): Promise<boolean> {
 
 /** Activate our extension under test. */
 export async function activateCopilotDebugger(): Promise<void> {
-  await vscode.extensions.getExtension('copilot-debugger')?.activate();
+  await vscode.extensions
+    .getExtension('dkattan.copilot-breakpoint-debugger')
+    ?.activate();
 }
 
 /** Open a script document and show it. */
