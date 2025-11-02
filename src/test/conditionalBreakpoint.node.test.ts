@@ -45,8 +45,7 @@ suite('Conditional Breakpoint Integration (Node.js)', () => {
       toolInvocationToken: undefined,
     });
 
-    const parts: any[] =
-      (result as any).parts || (result as any).content || [];
+    const parts: any[] = (result as any).parts || (result as any).content || [];
     const textOutput = parts
       .map(p => (p.text ? p.text : JSON.stringify(p)))
       .join('\n');
@@ -59,7 +58,10 @@ suite('Conditional Breakpoint Integration (Node.js)', () => {
     }
 
     // Verify condition was met (i should be >= 3)
-    if (!/"i"\s*:\s*[3-9]/.test(textOutput) && !/i.*>=?\s*[3-9]/.test(textOutput)) {
+    if (
+      !/"i"\s*:\s*[3-9]/.test(textOutput) &&
+      !/i.*>=?\s*[3-9]/.test(textOutput)
+    ) {
       throw new Error(
         'Breakpoint condition not met: expected i >= 3 in variables'
       );
@@ -99,8 +101,7 @@ suite('Conditional Breakpoint Integration (Node.js)', () => {
       toolInvocationToken: undefined,
     });
 
-    const parts: any[] =
-      (result as any).parts || (result as any).content || [];
+    const parts: any[] = (result as any).parts || (result as any).content || [];
     const textOutput = parts
       .map(p => (p.text ? p.text : JSON.stringify(p)))
       .join('\n');
@@ -153,8 +154,7 @@ suite('Conditional Breakpoint Integration (Node.js)', () => {
       toolInvocationToken: undefined,
     });
 
-    const parts: any[] =
-      (result as any).parts || (result as any).content || [];
+    const parts: any[] = (result as any).parts || (result as any).content || [];
     const textOutput = parts
       .map(p => (p.text ? p.text : JSON.stringify(p)))
       .join('\n');
@@ -163,14 +163,19 @@ suite('Conditional Breakpoint Integration (Node.js)', () => {
 
     // Logpoint should timeout or complete without stopping
     // If it stopped, that's an error (unless adapter doesn't support logpoints)
-    if (/stopped.*breakpoint/i.test(textOutput) && !/timeout/i.test(textOutput)) {
+    if (
+      /stopped.*breakpoint/i.test(textOutput) &&
+      !/timeout/i.test(textOutput)
+    ) {
       // Some debug adapters may not support logpoints and treat them as regular breakpoints
       console.warn(
         'Warning: Logpoint caused stop - adapter may not support logpoints'
       );
     } else if (/timeout/i.test(textOutput)) {
       // Expected: timeout means script completed without stopping
-      console.log('Logpoint correctly did not stop execution (timeout expected)');
+      console.log(
+        'Logpoint correctly did not stop execution (timeout expected)'
+      );
     }
   });
 });

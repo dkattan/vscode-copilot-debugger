@@ -116,10 +116,7 @@ export function assertStartDebuggerOutput(textOutput: string): void {
     throw new Error('Missing breakpoint JSON info');
   }
   if (
-    !(
-      /"line"\s*:\s*\d+/.test(textOutput) ||
-      /test\.(ps1|js)/i.test(textOutput)
-    )
+    !(/"line"\s*:\s*\d+/.test(textOutput) || /test\.(ps1|js)/i.test(textOutput))
   ) {
     throw new Error('Missing line number or script reference in debug info');
   }
