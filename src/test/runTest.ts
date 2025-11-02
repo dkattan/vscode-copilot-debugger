@@ -1,5 +1,9 @@
 import * as path from 'path';
-import { runTests, downloadAndUnzipVSCode } from '@vscode/test-electron';
+import {
+  runTests,
+  downloadAndUnzipVSCode,
+  resolveCliArgsFromVSCodeExecutablePath,
+} from '@vscode/test-electron';
 import * as cp from 'child_process';
 import * as fs from 'fs';
 
@@ -41,25 +45,11 @@ async function main() {
     fs.mkdirSync(userDataDir, { recursive: true });
     fs.mkdirSync(extensionsDir, { recursive: true });
 
-    // Download VS Code and resolve CLI path
+    // Download VS Code and resolve CLI path using the official utility
     const vscodeExecutablePath = await downloadAndUnzipVSCode('stable');
-    // Derive CLI path; on macOS, vscodeExecutablePath already includes the .app bundle root
-    let cliPath: string;
-    if (process.platform === 'darwin') {
-      cliPath = path.join(
-        vscodeExecutablePath,
-        'Contents',
-        'Resources',
-        'app',
-        'bin',
-        'code'
-      );
-    } else if (process.platform === 'win32') {
-      cliPath = path.join(vscodeExecutablePath, 'bin', 'code.cmd');
-    } else {
-      // linux
-      cliPath = path.join(vscodeExecutablePath, 'bin', 'code');
-    }
+    const [cliPath] = resolveCliArgsFromVSCodeExecutablePath(
+      vscodeExecutablePath
+    );
 
     const requiredExtensions = [
       'ms-vscode.PowerShell',
