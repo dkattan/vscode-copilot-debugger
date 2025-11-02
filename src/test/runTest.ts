@@ -43,12 +43,11 @@ async function main() {
 
     // Download VS Code and resolve CLI path
     const vscodeExecutablePath = await downloadAndUnzipVSCode('stable');
-    // Derive CLI path (macOS layout); extend for other OS as needed
+    // Derive CLI path; on macOS, vscodeExecutablePath already includes the .app bundle root
     let cliPath: string;
     if (process.platform === 'darwin') {
       cliPath = path.join(
         vscodeExecutablePath,
-        'Visual Studio Code.app',
         'Contents',
         'Resources',
         'app',
