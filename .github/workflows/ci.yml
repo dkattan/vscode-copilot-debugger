@@ -42,12 +42,10 @@ jobs:
       - name: Run tests on Linux
         if: runner.os == 'Linux'
         run: xvfb-run -a npm test
-        continue-on-error: true
 
       - name: Run tests on Windows/macOS
         if: runner.os != 'Linux'
         run: npm test
-        continue-on-error: true
 
   package:
     name: Package Extension
