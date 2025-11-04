@@ -1,18 +1,42 @@
-import * as vscode from 'vscode';
-import {
+import type {
   LanguageModelTool,
-  LanguageModelToolResult,
   LanguageModelToolInvocationOptions,
   LanguageModelToolInvocationPrepareOptions,
   ProviderResult,
-  LanguageModelTextPart,
 } from 'vscode';
+import * as vscode from 'vscode';
+import { LanguageModelTextPart, LanguageModelToolResult } from 'vscode';
 import { activeSessions, outputChannel } from './common';
 import { DAPHelpers } from './debugUtils';
 
 export interface EvaluateExpressionToolParameters {
   expression: string; // Expression to evaluate like in Debug Console
   sessionId?: string; // Optional explicit session id; otherwise uses active debug session
+}
+
+// DAP Evaluate Request Arguments
+interface EvaluateArguments {
+  expression: string;
+  frameId?: number;
+  context?: string;
+  format?: {
+    hex?: boolean;
+  };
+}
+
+// DAP Evaluate Response
+interface EvaluateResponse {
+  result: string;
+  type?: string;
+  presentationHint?: {
+    kind?: string;
+    attributes?: string[];
+    visibility?: string;
+  };
+  variablesReference: number;
+  namedVariables?: number;
+  indexedVariables?: number;
+  memoryReference?: string;
 }
 
 export class EvaluateExpressionTool
@@ -42,7 +66,7 @@ export class EvaluateExpressionTool
       // Gather context (need frame id when paused). If not paused evaluation may still work for some adapters.
       const debugContext = await DAPHelpers.getDebugContext(session);
 
-      const evalArgs: any = { expression, context: 'watch' };
+      const evalArgs: EvaluateArguments = { expression, context: 'watch' };
       if (debugContext?.frame?.id !== undefined) {
         evalArgs.frameId = debugContext.frame.id;
       }
@@ -50,7 +74,7 @@ export class EvaluateExpressionTool
       outputChannel.appendLine(
         `EvaluateExpressionTool: evaluating '${expression}' in session '${session.name}'.`
       );
-      let evalResponse: any;
+      let evalResponse: EvaluateResponse;
       try {
         evalResponse = await session.customRequest('evaluate', evalArgs);
       } catch (err) {

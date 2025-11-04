@@ -1,15 +1,16 @@
 {
   "compilerOptions": {
-    "module": "Node16",
     "target": "ES2022",
-    "outDir": "out",
     "lib": ["ES2022"],
-    "sourceMap": true,
-    "inlineSources": true,
     "rootDir": "src",
+    "module": "Node16",
+    "types": ["node", "mocha"],
     "strict": true,
-    "forceConsistentCasingInFileNames": true,
     "noUnusedParameters": true,
+    "inlineSources": true,
+    "outDir": "out",
+    "sourceMap": true,
+    "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true
     /* Additional Checks */
     // "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */

@@ -1,19 +1,16 @@
+import type { DebugSessionOptions } from 'vscode';
+import type { BreakpointHitInfo } from './common';
 import * as vscode from 'vscode';
-import {
-  activeSessions,
-  getCallStack,
-  outputChannel,
-  BreakpointHitInfo,
-} from './common';
-import { getStackFrameVariables } from './inspection';
-import { DebugSessionOptions } from 'vscode';
+import { activeSessions, getCallStack, outputChannel } from './common';
 import { waitForBreakpointHit } from './events';
+import { getStackFrameVariables } from './inspection';
 
 /**
  * Helper function to wait for a debug session to stop and gather debug information.
  * This is used by both startDebugSession and resumeDebugSession when waitForStop is true.
  *
- * @param params - Object containing session information and options for waiting.
+ * @param breakpointInfo - Information about the breakpoint hit, including session details and location.
+ * @param variableFilter - Optional array of variable name patterns to filter which variables are returned.
  * @returns A response object with debug information or error details.
  */
 async function resolveBreakpointInfo(
@@ -97,7 +94,7 @@ async function resolveBreakpointInfo(
       breakpoint: breakpointInfo,
       callStack: callStackData,
       variables: variablesData,
-      variablesError: variablesError,
+      variablesError,
     };
 
     return {
@@ -166,12 +163,17 @@ export const listDebugSessions = () => {
  * then wait until a breakpoint is hit before returning with detailed debug information.
  *
  * @param params - Object containing workspaceFolder, nameOrConfiguration, and optional variableFilter.
+ * @param params.workspaceFolder - Absolute path to the workspace folder where the debug session will run.
+ * @param params.nameOrConfiguration - Either a string name of a launch configuration or a DebugConfiguration object.
+ * @param params.variableFilter - Optional array of variable name patterns to filter which variables are returned.
+ * @param params.timeout_seconds - Optional timeout in seconds to wait for a breakpoint hit (default: 60).
+ * @param params.breakpointConfig - Optional configuration for managing breakpoints during the debug session.
+ * @param params.breakpointConfig.disableExisting - If true, removes all existing breakpoints before starting the session.
+ * @param params.breakpointConfig.breakpoints - Array of breakpoint configurations to set before starting the session.
  */
 export const startDebuggingAndWaitForStop = async (params: {
   workspaceFolder: string;
-  nameOrConfiguration:
-    | string
-    | { type: string; request: string; name: string; [key: string]: any };
+  nameOrConfiguration: string | vscode.DebugConfiguration;
   variableFilter?: string[];
   timeout_seconds?: number;
   breakpointConfig?: {
@@ -355,6 +357,7 @@ export const startDebuggingAndWaitForStop = async (params: {
  * Stop debug sessions that match the provided session name.
  *
  * @param params - Object containing the sessionName to stop.
+ * @param params.sessionName - Name of the debug session(s) to stop.
  */
 export const stopDebugSession = async (params: { sessionName: string }) => {
   const { sessionName } = params;
@@ -394,6 +397,11 @@ export const stopDebugSession = async (params: { sessionName: string }) => {
  * Resume execution of a debug session that has been paused (e.g., by a breakpoint).
  *
  * @param params - Object containing the sessionId of the debug session to resume and optional waitForStop flag.
+ * @param params.sessionId - ID of the debug session to resume.
+ * @param params.waitForStop - If true, waits for the session to stop at the next breakpoint before returning (default: false).
+ * @param params.breakpointConfig - Optional configuration for managing breakpoints when resuming.
+ * @param params.breakpointConfig.disableExisting - If true, removes all existing breakpoints before resuming.
+ * @param params.breakpointConfig.breakpoints - Array of breakpoint configurations to set before resuming.
  */
 export const resumeDebugSession = async (params: {
   sessionId: string;

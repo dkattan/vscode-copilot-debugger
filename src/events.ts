@@ -1,11 +1,51 @@
+import type { BreakpointHitInfo } from './common';
 import * as vscode from 'vscode';
 import {
   activeSessions,
-  BreakpointHitInfo,
   getCallStack,
-  outputChannel,
   onSessionTerminate,
+  outputChannel,
 } from './common';
+
+// Debug Adapter Protocol message types
+interface DebugProtocolMessage {
+  seq: number;
+  type: string;
+}
+
+interface DebugProtocolEvent extends DebugProtocolMessage {
+  type: 'event';
+  event: string;
+  body?: unknown;
+}
+
+interface StoppedEventBody {
+  reason: string;
+  description?: string;
+  threadId: number;
+  text?: string;
+  allThreadsStopped?: boolean;
+  preserveFocusHint?: boolean;
+}
+
+interface ThreadData {
+  threadId: number;
+  threadName: string;
+  stackFrames: Array<{
+    id: number;
+    name: string;
+    source?: {
+      name: string;
+      path: string;
+    };
+    line: number;
+    column: number;
+  }>;
+}
+
+interface DebugConfiguration extends vscode.DebugConfiguration {
+  sessionId?: string;
+}
 
 /** Event emitter for breakpoint hit notifications */
 export const breakpointEventEmitter =
@@ -23,20 +63,20 @@ vscode.debug.registerDebugAdapterTrackerFactory('*', {
         outputChannel.appendLine(`Debug session starting: ${session.name}`);
       }
 
-      onWillReceiveMessage?(message: any): void {
+      onWillReceiveMessage?(message: DebugProtocolMessage): void {
         // Optional: Log messages being received by the debug adapter
         outputChannel.appendLine(
           `Message received by debug adapter: ${JSON.stringify(message)}`
         );
       }
 
-      onDidSendMessage(message: any): void {
+      async onDidSendMessage(message: DebugProtocolMessage): Promise<void> {
         // Log all messages sent from the debug adapter to VS Code
         if (message.type === 'event') {
-          const event = message;
+          const event = message as DebugProtocolEvent;
           // The 'stopped' event is fired when execution stops (e.g., at a breakpoint or exception)
           if (event.event === 'stopped') {
-            const body = event.body;
+            const body = event.body as StoppedEventBody;
             // Process any stop event - including breakpoints, exceptions, and other stops
             const validReasons = [
               'breakpoint',
@@ -49,120 +89,23 @@ vscode.debug.registerDebugAdapterTrackerFactory('*', {
 
             if (validReasons.includes(body.reason)) {
               // Use existing getCallStack function to get thread and stack information
-              (async () => {
-                try {
-                  // Collect exception details if this is an exception
-                  let exceptionDetails = undefined;
-                  if (body.reason === 'exception' && body.description) {
-                    exceptionDetails = {
-                      description: body.description || 'Unknown exception',
-                      details: body.text || 'No additional details available',
-                    };
-                  }
-
-                  // Get call stack information for the session
-                  const callStackResult = await getCallStack({
-                    sessionName: session.name,
-                  });
-
-                  if (callStackResult.isError) {
-                    // If we couldn't get call stack, emit basic event
-                    breakpointEventEmitter.fire({
-                      sessionId: session.id,
-                      sessionName: session.name,
-                      threadId: body.threadId,
-                      reason: body.reason,
-                      exceptionInfo: exceptionDetails,
-                    });
-                    return;
-                  }
-                  if (!('json' in callStackResult.content[0])) {
-                    // If the content is not JSON, emit basic event
-                    breakpointEventEmitter.fire({
-                      sessionId: session.id,
-                      sessionName: session.name,
-                      threadId: body.threadId,
-                      reason: body.reason,
-                      exceptionInfo: exceptionDetails,
-                    });
-                    return;
-                  }
-                  // Extract call stack data from the result
-                  const callStackData =
-                    callStackResult.content[0].json?.callStacks[0];
-                  if (!('threads' in callStackData)) {
-                    // If threads are not present, emit basic event
-                    breakpointEventEmitter.fire({
-                      sessionId: session.id,
-                      sessionName: session.name,
-                      threadId: body.threadId,
-                      reason: body.reason,
-                      exceptionInfo: exceptionDetails,
-                    });
-                    return;
-                  }
-                  // If threads are present, find the one that matches the threadId
-                  if (!Array.isArray(callStackData.threads)) {
-                    breakpointEventEmitter.fire({
-                      sessionId: session.id,
-                      sessionName: session.name,
-                      threadId: body.threadId,
-                      reason: body.reason,
-                      exceptionInfo: exceptionDetails,
-                    });
-                    return;
-                  }
-                  // Find the thread that triggered the event
-                  const threadData = callStackData.threads.find(
-                    (t: any) => t.threadId === body.threadId
-                  );
-
-                  if (
-                    !threadData ||
-                    !threadData.stackFrames ||
-                    threadData.stackFrames.length === 0
-                  ) {
-                    // If thread or stack frames not found, emit basic event
-                    breakpointEventEmitter.fire({
-                      sessionId: session.id,
-                      sessionName: session.name,
-                      threadId: body.threadId,
-                      reason: body.reason,
-                      exceptionInfo: exceptionDetails,
-                    });
-                    return;
-                  }
-
-                  // Get the top stack frame
-                  const topFrame = threadData.stackFrames[0];
-
-                  // Emit breakpoint/exception hit event with stack frame information
-                  const eventData = {
-                    sessionId: session.id,
-                    sessionName: session.name,
-                    threadId: body.threadId,
-                    reason: body.reason,
-                    frameId: topFrame.id,
-                    filePath: topFrame.source?.path,
-                    line: topFrame.line,
-                    exceptionInfo: exceptionDetails,
+              try {
+                // Collect exception details if this is an exception
+                let exceptionDetails;
+                if (body.reason === 'exception' && body.description) {
+                  exceptionDetails = {
+                    description: body.description || 'Unknown exception',
+                    details: body.text || 'No additional details available',
                   };
+                }
 
-                  outputChannel.appendLine(
-                    `Firing breakpoint event: ${JSON.stringify(eventData)}`
-                  );
-                  breakpointEventEmitter.fire(eventData);
-                } catch (error) {
-                  console.error('Error processing debug event:', error);
-                  // Still emit event with basic info
-                  const exceptionDetails =
-                    body.reason === 'exception'
-                      ? {
-                          description: body.description || 'Unknown exception',
-                          details: body.text || 'No details available',
-                        }
-                      : undefined;
+                // Get call stack information for the session
+                const callStackResult = await getCallStack({
+                  sessionName: session.name,
+                });
 
+                if (callStackResult.isError) {
+                  // If we couldn't get call stack, emit basic event
                   breakpointEventEmitter.fire({
                     sessionId: session.id,
                     sessionName: session.name,
@@ -170,8 +113,103 @@ vscode.debug.registerDebugAdapterTrackerFactory('*', {
                     reason: body.reason,
                     exceptionInfo: exceptionDetails,
                   });
+                  return;
                 }
-              })();
+                if (!('json' in callStackResult.content[0])) {
+                  // If the content is not JSON, emit basic event
+                  breakpointEventEmitter.fire({
+                    sessionId: session.id,
+                    sessionName: session.name,
+                    threadId: body.threadId,
+                    reason: body.reason,
+                    exceptionInfo: exceptionDetails,
+                  });
+                  return;
+                }
+                // Extract call stack data from the result
+                const callStackData =
+                  callStackResult.content[0].json?.callStacks[0];
+                if (!('threads' in callStackData)) {
+                  // If threads are not present, emit basic event
+                  breakpointEventEmitter.fire({
+                    sessionId: session.id,
+                    sessionName: session.name,
+                    threadId: body.threadId,
+                    reason: body.reason,
+                    exceptionInfo: exceptionDetails,
+                  });
+                  return;
+                }
+                // If threads are present, find the one that matches the threadId
+                if (!Array.isArray(callStackData.threads)) {
+                  breakpointEventEmitter.fire({
+                    sessionId: session.id,
+                    sessionName: session.name,
+                    threadId: body.threadId,
+                    reason: body.reason,
+                    exceptionInfo: exceptionDetails,
+                  });
+                  return;
+                }
+                // Find the thread that triggered the event
+                const threadData = callStackData.threads.find(
+                  (t: ThreadData) => t.threadId === body.threadId
+                );
+
+                if (
+                  !threadData ||
+                  !threadData.stackFrames ||
+                  threadData.stackFrames.length === 0
+                ) {
+                  // If thread or stack frames not found, emit basic event
+                  breakpointEventEmitter.fire({
+                    sessionId: session.id,
+                    sessionName: session.name,
+                    threadId: body.threadId,
+                    reason: body.reason,
+                    exceptionInfo: exceptionDetails,
+                  });
+                  return;
+                }
+
+                // Get the top stack frame
+                const topFrame = threadData.stackFrames[0];
+
+                // Emit breakpoint/exception hit event with stack frame information
+                const eventData = {
+                  sessionId: session.id,
+                  sessionName: session.name,
+                  threadId: body.threadId,
+                  reason: body.reason,
+                  frameId: topFrame.id,
+                  filePath: topFrame.source?.path,
+                  line: topFrame.line,
+                  exceptionInfo: exceptionDetails,
+                };
+
+                outputChannel.appendLine(
+                  `Firing breakpoint event: ${JSON.stringify(eventData)}`
+                );
+                breakpointEventEmitter.fire(eventData);
+              } catch (error) {
+                console.error('Error processing debug event:', error);
+                // Still emit event with basic info
+                const exceptionDetails =
+                  body.reason === 'exception'
+                    ? {
+                        description: body.description || 'Unknown exception',
+                        details: body.text || 'No details available',
+                      }
+                    : undefined;
+
+                breakpointEventEmitter.fire({
+                  sessionId: session.id,
+                  sessionName: session.name,
+                  threadId: body.threadId,
+                  reason: body.reason,
+                  exceptionInfo: exceptionDetails,
+                });
+              }
             }
           }
         }
@@ -180,14 +218,14 @@ vscode.debug.registerDebugAdapterTrackerFactory('*', {
         );
       }
 
-      onWillSendMessage(message: any): void {
+      onWillSendMessage(message: DebugProtocolMessage): void {
         // Log all messages sent to the debug adapter
         outputChannel.appendLine(
           `Message sent to debug adapter: ${JSON.stringify(message)}`
         );
       }
 
-      onDidReceiveMessage(message: any): void {
+      onDidReceiveMessage(message: DebugProtocolMessage): void {
         // Log all messages received from the debug adapter
         outputChannel.appendLine(
           `Message received from debug adapter: ${JSON.stringify(message)}`
@@ -213,6 +251,10 @@ vscode.debug.registerDebugAdapterTrackerFactory('*', {
  * Wait for a breakpoint to be hit in a debug session.
  *
  * @param params - Object containing sessionId or sessionName to identify the debug session, and optional timeout.
+ * @param params.sessionId - Optional session ID to identify the debug session.
+ * @param params.sessionName - Optional session name to identify the debug session.
+ * @param params.timeout - Optional timeout in milliseconds (default: 30000).
+ * @param params.includeTermination - Optional flag to include session termination events (default: true).
  */
 export const waitForBreakpointHit = async (params: {
   sessionId?: string;
@@ -232,6 +274,8 @@ export const waitForBreakpointHit = async (params: {
     const breakpointHitPromise = new Promise<BreakpointHitInfo>(
       (resolve, reject) => {
         const availableSessions = activeSessions;
+        // Declare terminateListener early to avoid use-before-define
+        let terminateListener: vscode.Disposable | undefined;
         // Use the breakpointEventEmitter which is already wired up to the debug adapter tracker
         const listener = onBreakpointHit(event => {
           // Check if this event is for one of our target sessions
@@ -245,7 +289,8 @@ export const waitForBreakpointHit = async (params: {
               s =>
                 s.id === sessionId ||
                 (s.configuration &&
-                  (s.configuration as any).sessionId === sessionId)
+                  (s.configuration as DebugConfiguration).sessionId ===
+                    sessionId)
             );
             if (session) {
               targetSession = session;
@@ -258,11 +303,16 @@ export const waitForBreakpointHit = async (params: {
           } else {
             targetSession = availableSessions[0]; // All active sessions if neither ID nor name provided
           }
-          const nameMatch = sessionName
-            ? event.sessionName === sessionName ||
-              event.sessionName.startsWith(sessionName)
-            : true;
-          if (targetSession !== undefined && nameMatch) {
+
+          // Check if the event matches our target session by session ID or name
+          const eventMatchesTarget =
+            targetSession !== undefined &&
+            (event.sessionId === targetSession.id ||
+              event.sessionName === targetSession.name ||
+              event.sessionName.startsWith(targetSession.name) ||
+              targetSession.name.startsWith(event.sessionName));
+
+          if (eventMatchesTarget) {
             listener.dispose();
             terminateListener?.dispose();
             resolve(event);
@@ -273,7 +323,6 @@ export const waitForBreakpointHit = async (params: {
         });
 
         // Optionally listen for session termination
-        let terminateListener: vscode.Disposable | undefined;
         if (includeTermination) {
           terminateListener = onSessionTerminate(endEvent => {
             const matches = sessionId
@@ -342,6 +391,8 @@ export const waitForBreakpointHit = async (params: {
  * will receive notifications when breakpoints are hit.
  *
  * @param params - Object containing an optional filter for the debug sessions to monitor.
+ * @param params.sessionId - Optional session ID to filter breakpoint events.
+ * @param params.sessionName - Optional session name to filter breakpoint events.
  */
 export const subscribeToBreakpointEvents = async (params: {
   sessionId?: string;

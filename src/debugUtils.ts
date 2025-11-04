@@ -1,5 +1,5 @@
-import * as vscode from 'vscode';
-import { LanguageModelToolResult, LanguageModelTextPart } from 'vscode';
+import type * as vscode from 'vscode';
+import { LanguageModelTextPart, LanguageModelToolResult } from 'vscode';
 
 // Shared DAP interfaces
 export interface Thread {
@@ -42,6 +42,10 @@ export interface ScopeInfo {
 
 export interface VariablesData {
   scopes: ScopeInfo[];
+}
+
+export interface VariablesResponse {
+  variables: Variable[];
 }
 
 export interface DebugContext {
@@ -93,7 +97,7 @@ export class DAPHelpers {
         frame: topFrame,
         scopes: scopesResponse.scopes,
       };
-    } catch (_error) {
+    } catch {
       return null;
     }
   }
@@ -102,7 +106,7 @@ export class DAPHelpers {
     session: vscode.DebugSession,
     variablesReference: number
   ): Promise<VariableInfo[]> {
-    let variablesResponse: any;
+    let variablesResponse: VariablesResponse;
     try {
       variablesResponse = await session.customRequest('variables', {
         variablesReference,

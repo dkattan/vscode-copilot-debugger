@@ -1,12 +1,19 @@
-import * as vscode from 'vscode';
-import {
+import type {
   LanguageModelTool,
-  LanguageModelToolResult,
   LanguageModelToolInvocationOptions,
   LanguageModelToolInvocationPrepareOptions,
+  LanguageModelToolResult,
   ProviderResult,
 } from 'vscode';
-import { DAPHelpers, VariableInfo, FoundVariable } from './debugUtils';
+import type {
+  FoundVariable,
+  Scope,
+  Variable,
+  VariableInfo,
+  VariablesResponse,
+} from './debugUtils';
+import * as vscode from 'vscode';
+import { DAPHelpers } from './debugUtils';
 
 export interface ExpandVariableToolParameters {
   variableName: string;
@@ -90,11 +97,11 @@ export class ExpandVariableTool
 
   private async getOriginalVariable(
     session: vscode.DebugSession,
-    scopes: any[],
+    scopes: Scope[],
     variableName: string
-  ): Promise<any | null> {
+  ): Promise<Variable | null> {
     for (const scope of scopes) {
-      let variablesResponse: any;
+      let variablesResponse: VariablesResponse;
       try {
         variablesResponse = await session.customRequest('variables', {
           variablesReference: scope.variablesReference,
@@ -104,7 +111,7 @@ export class ExpandVariableTool
       }
       if (variablesResponse?.variables) {
         const foundVariable = variablesResponse.variables.find(
-          (v: any) => (v.evaluateName || v.name) === variableName
+          (v: Variable) => (v.evaluateName || v.name) === variableName
         );
         if (foundVariable) {
           return foundVariable;

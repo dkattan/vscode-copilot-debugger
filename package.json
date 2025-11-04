@@ -1,11 +1,12 @@
 {
+  "publisher": "dkattan",
   "name": "copilot-breakpoint-debugger",
   "displayName": "Copilot Breakpoint Debugger",
-  "description": "Use GitHub Copilot to automate starting, inspecting and resuming VS Code debug sessions with conditional breakpoints, hit conditions, and logpoints.",
   "version": "0.0.1",
-  "publisher": "dkattan",
+  "description": "Use GitHub Copilot to automate starting, inspecting and resuming VS Code debug sessions with conditional breakpoints, hit conditions, and logpoints.",
   "preview": true,
   "license": "MIT",
+  "homepage": "https://github.com/dkattan/vscode-copilot-debugger#readme",
   "repository": {
     "type": "git",
     "url": "https://github.com/dkattan/vscode-copilot-debugger"
@@ -13,15 +14,6 @@
   "bugs": {
     "url": "https://github.com/dkattan/vscode-copilot-debugger/issues"
   },
-  "homepage": "https://github.com/dkattan/vscode-copilot-debugger#readme",
-  "icon": "images/icon.png",
-  "engines": {
-    "vscode": "^1.102.0"
-  },
-  "categories": [
-    "Debuggers",
-    "Other"
-  ],
   "keywords": [
     "copilot",
     "debug",
@@ -31,10 +23,19 @@
     "resume",
     "ai"
   ],
-  "activationEvents": [
-    "onLanguageModelTools"
+  "categories": [
+    "Debuggers",
+    "Other"
   ],
   "main": "./out/extension.js",
+  "icon": "images/icon.png",
+  "engines": {
+    "vscode": "^1.102.0"
+  },
+  "activationEvents": [
+    "onLanguageModelTools",
+    "onStartupFinished"
+  ],
   "contributes": {
     "configuration": {
       "title": "Copilot Breakpoint Debugger",
@@ -274,7 +275,12 @@
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
+  "dependencies": {
+    "debug-tracker-vscode": "^0.0.15",
+    "mocha": "^10.7.3"
+  },
   "devDependencies": {
+    "@antfu/eslint-config": "^3.0.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
     "@types/vscode": "^1.102.0",
@@ -286,10 +292,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.3",
     "prettier": "^3.6.2",
-    "typescript": "^5.8.3",
-    "ts-node": "^10.9.2"
-  },
-  "dependencies": {
-    "debug-tracker-vscode": "^0.0.15"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   }
 }

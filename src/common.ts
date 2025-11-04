@@ -3,6 +3,18 @@ import * as vscode from 'vscode';
 // Create an output channel for debugging
 export const outputChannel = vscode.window.createOutputChannel('Debug Tools');
 
+/** Debug Adapter Protocol StackFrame interface */
+interface DAPStackFrame {
+  id: number;
+  name: string;
+  source?: {
+    name?: string;
+    path?: string;
+  };
+  line: number;
+  column: number;
+}
+
 /** Event emitter for debug session start notifications */
 export const sessionStartEventEmitter =
   new vscode.EventEmitter<vscode.DebugSession>();
@@ -37,6 +49,7 @@ export interface BreakpointHitInfo {
  * Get the current call stack information for an active debug session.
  *
  * @param params - Object containing the sessionName to get call stack for.
+ * @param params.sessionName - Optional name of the debug session to get call stack for. If not provided, returns call stacks for all active sessions.
  */
 export const getCallStack = async (params: { sessionName?: string }) => {
   const { sessionName } = params;
@@ -90,18 +103,20 @@ export const getCallStack = async (params: { sessionName?: string }) => {
                   return {
                     threadId: thread.id,
                     threadName: thread.name,
-                    stackFrames: stackTrace.stackFrames.map((frame: any) => ({
-                      id: frame.id,
-                      name: frame.name,
-                      source: frame.source
-                        ? {
-                            name: frame.source.name,
-                            path: frame.source.path,
-                          }
-                        : undefined,
-                      line: frame.line,
-                      column: frame.column,
-                    })),
+                    stackFrames: stackTrace.stackFrames.map(
+                      (frame: DAPStackFrame) => ({
+                        id: frame.id,
+                        name: frame.name,
+                        source: frame.source
+                          ? {
+                              name: frame.source.name,
+                              path: frame.source.path,
+                            }
+                          : undefined,
+                        line: frame.line,
+                        column: frame.column,
+                      })
+                    ),
                   };
                 } catch (error) {
                   return {

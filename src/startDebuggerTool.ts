@@ -1,16 +1,15 @@
-import * as vscode from 'vscode';
-import {
+import type {
   LanguageModelTool,
-  LanguageModelToolResult,
   LanguageModelToolInvocationOptions,
   LanguageModelToolInvocationPrepareOptions,
   ProviderResult,
-  LanguageModelTextPart,
 } from 'vscode';
-import { startDebuggingAndWaitForStop } from './session';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as vscode from 'vscode';
+import { LanguageModelTextPart, LanguageModelToolResult } from 'vscode';
 import { outputChannel } from './common';
-import * as fs from 'fs';
-import * as path from 'path';
+import { startDebuggingAndWaitForStop } from './session';
 
 // Parameters for starting a debug session. The tool starts a debugger using the
 // configured default launch configuration and waits for the first breakpoint hit,
@@ -50,7 +49,7 @@ export class StartDebuggerTool
     // for the debug configuration we synthesize.
     const openWorkspaceFolders = vscode.workspace.workspaceFolders;
     const firstOpenFolder = openWorkspaceFolders?.[0]?.uri.fsPath;
-    let requestedFolderPath = workspaceFolder || firstOpenFolder || '';
+    const requestedFolderPath = workspaceFolder || firstOpenFolder || '';
     if (!requestedFolderPath) {
       return new LanguageModelToolResult([
         new LanguageModelTextPart(
@@ -63,7 +62,7 @@ export class StartDebuggerTool
     );
     const effectiveWorkspaceFolder = isActualWorkspaceFolder
       ? requestedFolderPath
-      : firstOpenFolder || requestedFolderPath; // fallback to first open folder
+      : (firstOpenFolder ?? requestedFolderPath);
     const debugWorkingDir = requestedFolderPath; // use the user-specified path for cwd/script resolution
 
     // Get the default launch configuration from settings
@@ -81,7 +80,7 @@ export class StartDebuggerTool
 
     // Always attempt to read root workspace launch.json (tests place launch.json inside test-workspace which VS Code will NOT auto-load).
     // We will parse it manually so that we can synthesize an inline configuration when the named one isn't found.
-    let rootLaunchConfigs: any[] = [];
+    let rootLaunchConfigs: vscode.DebugConfiguration[] = [];
     try {
       const launchDoc = await vscode.workspace.openTextDocument(
         vscode.Uri.file(`${effectiveWorkspaceFolder}/.vscode/launch.json`)
@@ -95,9 +94,7 @@ export class StartDebuggerTool
     }
 
     // If the desired configuration name does not exist in root launch configs, attempt discovery of test scripts and build inline config.
-    let nameOrConfiguration:
-      | string
-      | { type: string; request: string; name: string; [key: string]: any } =
+    let nameOrConfiguration: string | vscode.DebugConfiguration =
       configurationName || 'Inline-Auto';
 
     // Early override: if primary breakpoint targets a .js file, prefer Node even if PowerShell named config exists.
@@ -106,7 +103,7 @@ export class StartDebuggerTool
       nameOrConfiguration = {
         type: 'node',
         request: 'launch',
-        name: 'Run ' + path.basename(earlyPrimary),
+        name: `Run ${path.basename(earlyPrimary)}`,
         program: earlyPrimary,
         cwd: debugWorkingDir,
         console: 'integratedTerminal',
@@ -122,7 +119,7 @@ export class StartDebuggerTool
       !hasNamedConfig &&
       !(
         typeof nameOrConfiguration === 'object' &&
-        (nameOrConfiguration as any).type === 'node'
+        nameOrConfiguration.type === 'node'
       )
     ) {
       // Discover candidate scripts (prefer PowerShell)
@@ -141,11 +138,8 @@ export class StartDebuggerTool
         pwshFiles = await vscode.workspace.findFiles(pwshPattern);
         jsFiles = await vscode.workspace.findFiles(jsPattern);
       }
-      // Fallback to global search if not found locally
+      // Broaden search to entire workspace if not found locally
       if (!pwshFiles.length && !jsFiles.length) {
-        // Fallback: broaden search to entire (first) workspace folder if initial scoped lookup failed.
-        // This preserves the intent of using the requested subfolder first, while still allowing
-        // tests (and real users) to resolve scripts that live at the root or elsewhere.
         try {
           const allPwsh = await vscode.workspace.findFiles(
             '**/test.ps1',
@@ -219,7 +213,7 @@ export class StartDebuggerTool
         let resolvedScript: string | undefined = scriptField;
         if (resolvedScript && typeof resolvedScript === 'string') {
           resolvedScript = resolvedScript.replace(
-            '${workspaceFolder}',
+            `\${workspaceFolder}`,
             debugWorkingDir
           );
         }
@@ -227,10 +221,10 @@ export class StartDebuggerTool
         const typeMismatch =
           breakpointExt === 'js' && named.type?.toLowerCase() !== 'node'
             ? true
-            : breakpointExt === 'ps1' &&
+            : !!(
+                breakpointExt === 'ps1' &&
                 named.type?.toLowerCase() !== 'powershell'
-              ? true
-              : false;
+              );
         if (!exists || typeMismatch) {
           // Synthesize inline config based on breakpoint primary path if available
           if (bpPrimary && fs.existsSync(bpPrimary)) {
@@ -238,7 +232,7 @@ export class StartDebuggerTool
               nameOrConfiguration = {
                 type: 'PowerShell',
                 request: 'launch',
-                name: 'Run ' + path.basename(bpPrimary) + ' (inline)',
+                name: `Run ${path.basename(bpPrimary)} (inline)`,
                 script: bpPrimary,
                 cwd: debugWorkingDir,
                 createTemporaryIntegratedConsole: true,
@@ -250,7 +244,7 @@ export class StartDebuggerTool
               nameOrConfiguration = {
                 type: 'node',
                 request: 'launch',
-                name: 'Run ' + path.basename(bpPrimary) + ' (inline)',
+                name: `Run ${path.basename(bpPrimary)} (inline)`,
                 program: bpPrimary,
                 cwd: debugWorkingDir,
                 console: 'integratedTerminal',
@@ -275,13 +269,13 @@ export class StartDebuggerTool
       primaryBpPath.toLowerCase().endsWith('.js') &&
       (typeof nameOrConfiguration === 'string' ||
         (typeof nameOrConfiguration === 'object' &&
-          (nameOrConfiguration as any).type?.toLowerCase() !== 'node'))
+          nameOrConfiguration.type?.toLowerCase() !== 'node'))
     ) {
       const baseJsName = path.basename(primaryBpPath);
       nameOrConfiguration = {
         type: 'node',
         request: 'launch',
-        name: 'Run ' + baseJsName + ' (auto-node)',
+        name: `Run ${baseJsName} (auto-node)`,
         program: primaryBpPath,
         cwd: debugWorkingDir,
         console: 'integratedTerminal',
@@ -301,7 +295,7 @@ export class StartDebuggerTool
             const parsed = JSON.parse(trimmed);
             if (parsed && parsed.type && parsed.request) {
               if (!parsed.name) {
-                parsed.name = parsed.type + '-inline';
+                parsed.name = `${parsed.type}-inline`;
               }
               nameOrConfiguration = parsed;
             }
@@ -333,7 +327,6 @@ export class StartDebuggerTool
         if (item.type === 'json' && 'json' in item) {
           return new LanguageModelTextPart(JSON.stringify(item.json));
         }
-        // Fall back to text if present
         const textValue = 'text' in item ? item.text : JSON.stringify(item);
         return new LanguageModelTextPart(textValue);
       });

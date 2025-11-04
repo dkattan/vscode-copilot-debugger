@@ -1,11 +1,11 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { GetVariablesTool } from './getVariablesTool';
-import { ExpandVariableTool } from './expandVariableTool';
-import { StartDebuggerTool } from './startDebuggerTool';
-import { ResumeDebugSessionTool } from './resumeDebugSessionTool';
 import { EvaluateExpressionTool } from './evaluateExpressionTool';
+import { ExpandVariableTool } from './expandVariableTool';
+import { GetVariablesTool } from './getVariablesTool';
+import { ResumeDebugSessionTool } from './resumeDebugSessionTool';
+import { StartDebuggerTool } from './startDebuggerTool';
 import { StopDebugSessionTool } from './stopDebugSessionTool';
 
 // This method is called when your extension is activated

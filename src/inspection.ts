@@ -1,8 +1,37 @@
 import { activeSessions, outputChannel } from './common';
+
+interface Variable {
+  name: string;
+  value: string;
+  type?: string;
+  evaluateName?: string;
+  variablesReference: number;
+}
+
+interface ScopeVariables {
+  scopeName: string;
+  variables: Variable[];
+  error?: string;
+}
+
+interface StackFrameVariablesResult {
+  sessionId: string;
+  frameId: number;
+  threadId: number;
+  variablesByScope: ScopeVariables[];
+  filter?: string;
+  debuggerType: string;
+}
+
 /**
  * Get variables from a specific stack frame.
  *
  * @param params - Object containing sessionId, frameId, threadId, and optional filter to get variables from.
+ * @param params.sessionId - The ID of the debug session.
+ * @param params.frameId - The ID of the stack frame.
+ * @param params.threadId - The ID of the thread.
+ * @param params.filter - Optional regex pattern to filter variables by name.
+ * @param params.retryIfEmpty - Optional flag to retry once without filter if empty.
  */
 export const getStackFrameVariables = async (params: {
   sessionId: string;
@@ -12,7 +41,7 @@ export const getStackFrameVariables = async (params: {
   retryIfEmpty?: boolean; // optional flag to retry once without filter if empty
 }): Promise<
   | {
-      content: Array<{ type: 'json'; json: any }>;
+      content: Array<{ type: 'json'; json: StackFrameVariablesResult }>;
       isError: false;
     }
   | {
@@ -161,7 +190,7 @@ export const getStackFrameVariables = async (params: {
 
     // If requested, retry once without filter when nothing captured and filter was present
     const totalVars = variablesByScope.reduce(
-      (sum, s: any) =>
+      (sum, s: ScopeVariables) =>
         sum + (Array.isArray(s.variables) ? s.variables.length : 0),
       0
     );

@@ -1,12 +1,13 @@
-import * as vscode from 'vscode';
-import {
+import type {
   LanguageModelTool,
-  LanguageModelToolResult,
   LanguageModelToolInvocationOptions,
   LanguageModelToolInvocationPrepareOptions,
+  LanguageModelToolResult,
   ProviderResult,
 } from 'vscode';
-import { DAPHelpers, VariablesData } from './debugUtils';
+import type { VariablesData } from './debugUtils';
+import * as vscode from 'vscode';
+import { DAPHelpers } from './debugUtils';
 
 export interface GetVariablesToolParameters {}
 
