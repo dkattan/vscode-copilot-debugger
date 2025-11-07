@@ -4,7 +4,7 @@
     "lib": ["ES2022"],
     "rootDir": "src",
     "module": "Node16",
-    "types": ["node", "mocha"],
+    "types": ["node"],
     "strict": true,
     "noUnusedParameters": true,
     "inlineSources": true,

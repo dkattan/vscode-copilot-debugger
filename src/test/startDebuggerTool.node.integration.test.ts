@@ -1,6 +1,6 @@
 import {
-  invokeStartDebuggerTool,
   assertStartDebuggerOutput,
+  invokeStartDebuggerTool,
 } from './utils/startDebuggerToolTestUtils';
 
 // Integration test: launches a Node.js debug session for test.js, sets a breakpoint,
@@ -8,8 +8,8 @@ import {
 //
 // This provides equivalent coverage to PowerShell tests and is reliable in CI environments.
 
-suite('StartDebuggerTool Integration (Node.js)', () => {
-  test('starts debugger and captures breakpoint debug info', async function () {
+describe('startDebuggerTool Integration (Node.js)', () => {
+  it('starts debugger and captures breakpoint debug info', async function () {
     this.timeout(5000); // allow time for activation + breakpoint
 
     const result = await invokeStartDebuggerTool({

@@ -1,31 +1,56 @@
-import * as assert from 'assert';
-import { ResumeDebugSessionTool } from '../resumeDebugSessionTool';
+import type {
+  LanguageModelToolInvocationPrepareOptions,
+  PreparedToolInvocation,
+} from 'vscode';
+import * as assert from 'node:assert';
+import {
+  ResumeDebugSessionTool,
+  type ResumeDebugSessionToolParameters,
+} from '../resumeDebugSessionTool';
 
-suite('ResumeDebugSessionTool', () => {
-  test('prepareInvocation includes session id', async () => {
+describe('resumeDebugSessionTool', () => {
+  it('prepareInvocation includes session id', async () => {
     const tool = new ResumeDebugSessionTool();
     const maybePrepared = tool.prepareInvocation?.({
       input: { sessionId: 'session-123' },
-    } as any);
-    const prepared = await Promise.resolve(maybePrepared as any);
+    } as LanguageModelToolInvocationPrepareOptions<ResumeDebugSessionToolParameters>);
+    const prepared = await Promise.resolve(
+      maybePrepared as PreparedToolInvocation | undefined
+    );
     assert.ok(prepared, 'Prepared invocation should be defined');
+    const message =
+      typeof prepared.invocationMessage === 'string'
+        ? prepared.invocationMessage
+        : prepared.invocationMessage?.value || '';
     assert.ok(
-      prepared.invocationMessage.includes('session-123'),
+      message.includes('session-123'),
       'Invocation message should include session id'
     );
   });
 
-  test('invoke returns error when session not found', async () => {
+  it('invoke returns error when session not found', async () => {
     const tool = new ResumeDebugSessionTool();
     const result = await tool.invoke({
       input: { sessionId: 'missing', waitForStop: false },
-    } as any);
-    // LanguageModelToolResult is iterable via its parts array (content). Use any cast due to API typing.
-    const parts: any[] = (result as any).parts || (result as any).content || [];
+      toolInvocationToken: undefined,
+    });
+    // LanguageModelToolResult has a content array containing LanguageModelTextPart or unknown types
+    const parts = (result.content || []) as Array<{
+      text?: string;
+      value?: string;
+    }>;
     const combined = parts
-      .map(p =>
-        'text' in p ? p.text : 'value' in p ? p.value : JSON.stringify(p)
-      )
+      .map(p => {
+        if (typeof p === 'object' && p !== null) {
+          if ('text' in p) {
+            return (p as { text?: string }).text;
+          }
+          if ('value' in p) {
+            return (p as { value?: string }).value;
+          }
+        }
+        return JSON.stringify(p);
+      })
       .join('\n');
     assert.ok(
       /Error resuming debug session|No debug session found/i.test(combined),

@@ -1,10 +1,11 @@
-import * as path from 'path';
-import Mocha from 'mocha';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { glob } from 'glob';
-import * as fs from 'fs';
+import Mocha from 'mocha';
+import { register } from 'ts-node';
 
 // Register ts-node so VS Code extension host can execute TypeScript test sources directly.
-require('ts-node').register({
+register({
   transpileOnly: true,
   compilerOptions: {
     module: 'Node16',
@@ -28,16 +29,17 @@ function findRepoRoot(startDir: string): string {
 }
 
 export function run(): Promise<void> {
-  const sentinel = (global as any).__TS_NODE_TEST_RUN__;
+  const sentinel: boolean | undefined = (globalThis as Record<string, unknown>)
+    .__TS_NODE_TEST_RUN__ as boolean | undefined;
   if (sentinel) {
     console.log(
       '[ts-node-test] Skipping duplicate test run (sentinel detected)'
     );
     return Promise.resolve();
   }
-  (global as any).__TS_NODE_TEST_RUN__ = true;
+  (globalThis as Record<string, unknown>).__TS_NODE_TEST_RUN__ = true;
   const mocha = new Mocha({
-    ui: 'tdd',
+    ui: 'bdd',
     color: true,
     timeout: 60000,
   });

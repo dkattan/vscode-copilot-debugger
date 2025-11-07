@@ -1,5 +1,4 @@
 import * as path from 'node:path';
-import { it, suite } from 'mocha';
 import * as vscode from 'vscode';
 import { StartDebuggerTool } from '../startDebuggerTool';
 import { resolveWorkspaceFolder } from './utils/debugTestUtils';
@@ -14,7 +13,7 @@ import {
 // Prefers PowerShell when available locally (and not CI), otherwise falls back to Node.
 // This replaces previous separate PowerShell and Node (.node) suites.
 
-suite('Conditional Breakpoint Integration (Unified)', () => {
+describe('conditional Breakpoint Integration (Unified)', () => {
   const chooseRuntime = async () => {
     const pwshAvailable = await ensurePowerShellExtension();
     if (!process.env.CI && pwshAvailable) {
@@ -23,7 +22,7 @@ suite('Conditional Breakpoint Integration (Unified)', () => {
     return 'node' as const;
   };
 
-  test('conditional breakpoint triggers only when condition is met (pwsh fallback to node)', async function () {
+  it('conditional breakpoint triggers only when condition is met (pwsh fallback to node)', async function () {
     this.timeout(5000);
     const runtime = await chooseRuntime();
     const extensionRoot = getExtensionRoot();

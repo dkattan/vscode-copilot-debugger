@@ -1,5 +1,4 @@
 import * as path from 'node:path';
-import { it } from 'mocha';
 import * as vscode from 'vscode';
 import { StartDebuggerTool } from '../startDebuggerTool';
 import {
@@ -12,7 +11,7 @@ import {
 // Integration tests for multi-root workspace scenarios
 // Tests individual workspaces (a: PowerShell, b: Node.js) and compound launch configs
 
-suite('multi-Root Workspace Integration', () => {
+describe('multi-Root Workspace Integration', () => {
   it('workspace A (PowerShell) - individual debug session', async function () {
     // Skip PowerShell tests in CI - they require PowerShell runtime
     if (process.env.CI) {

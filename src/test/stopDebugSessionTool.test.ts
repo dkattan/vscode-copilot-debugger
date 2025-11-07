@@ -4,7 +4,6 @@ import type {
 } from 'vscode';
 import * as assert from 'node:assert';
 import * as path from 'node:path';
-import { describe, it } from 'mocha';
 import * as vscode from 'vscode';
 import { StartDebuggerTool } from '../startDebuggerTool';
 import {

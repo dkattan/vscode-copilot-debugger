@@ -1,13 +1,13 @@
-import {
-  invokeStartDebuggerTool,
-  ensurePowerShellExtension,
-  activateCopilotDebugger,
-  getExtensionRoot,
-  openScriptDocument,
-  StartDebuggerResult,
-} from './utils/startDebuggerToolTestUtils';
-import * as path from 'path';
+import type { StartDebuggerResult } from './utils/startDebuggerToolTestUtils';
+import * as path from 'node:path';
 import * as vscode from 'vscode';
+import {
+  activateCopilotDebugger,
+  ensurePowerShellExtension,
+  getExtensionRoot,
+  invokeStartDebuggerTool,
+  openScriptDocument,
+} from './utils/startDebuggerToolTestUtils';
 
 // Helper to extract variables array lengths from text output (expects a JSON blob containing \"variablesByScope\")
 function extractVariableCounts(result: StartDebuggerResult): {
@@ -43,7 +43,7 @@ function extractVariableCounts(result: StartDebuggerResult): {
           total += count;
         }
         return { total, byScope };
-      } catch (e) {
+      } catch {
         // ignore parse errors
       }
     }
@@ -51,8 +51,8 @@ function extractVariableCounts(result: StartDebuggerResult): {
   return { total: 0, byScope: {} };
 }
 
-suite('Variable Filter Reduces Payload (Unified)', () => {
-  test('filtered variables are fewer than unfiltered (pwsh fallback to node)', async function () {
+describe('variable Filter Reduces Payload (Unified)', () => {
+  it('filtered variables are fewer than unfiltered (pwsh fallback to node)', async function () {
     this.timeout(5000);
 
     // Decide runtime: prefer PowerShell if available locally & not explicitly disabled by CI env

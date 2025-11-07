@@ -35,7 +35,7 @@ export default antfu(
   },
   // Test directory overrides
   {
-    files: ['src/test/**/*.ts', 'src/test/**/*.tsx'],
+    files: ['src/test/**/*.ts'],
     rules: {
       // Allow console logging inside tests for debugging purposes
       'no-console': 'off',

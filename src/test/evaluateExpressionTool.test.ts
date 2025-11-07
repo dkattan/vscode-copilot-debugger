@@ -1,12 +1,11 @@
 import * as assert from 'node:assert';
 import * as path from 'node:path';
-import { it, suite } from 'mocha';
 import * as vscode from 'vscode';
 import { EvaluateExpressionTool } from '../evaluateExpressionTool';
 import { StartDebuggerTool } from '../startDebuggerTool';
 
-suite('evaluateExpressionTool', () => {
-  test('prepareInvocation includes expression', async () => {
+describe('evaluateExpressionTool', () => {
+  it('prepareInvocation includes expression', async () => {
     const tool = new EvaluateExpressionTool();
     interface MockPrepareOptions {
       input: { expression: string };

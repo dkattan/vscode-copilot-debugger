@@ -1,12 +1,11 @@
 import type * as vscode from 'vscode';
 import * as assert from 'node:assert';
-import { it, setup, suite } from 'mocha';
 import { activeSessions } from '../common';
 import { getStackFrameVariables } from '../inspection';
 
-suite('getStackFrameVariables filter behavior', () => {
-  setup(() => {
-    // Clear and insert mock session
+describe('getStackFrameVariables filter behavior', () => {
+  beforeEach(() => {
+    // Clear and insert mock session before each test to ensure isolation
     activeSessions.splice(0, activeSessions.length);
     activeSessions.push({
       id: 'mock-session',

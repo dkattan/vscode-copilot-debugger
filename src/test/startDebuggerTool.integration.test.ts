@@ -1,6 +1,6 @@
 import {
-  invokeStartDebuggerTool,
   assertStartDebuggerOutput,
+  invokeStartDebuggerTool,
 } from './utils/startDebuggerToolTestUtils';
 
 // Integration test: launches a PowerShell debug session for test.ps1, sets a breakpoint,
@@ -10,8 +10,8 @@ import {
 // For CI, we rely on Node.js tests which provide equivalent coverage of the
 // debug adapter protocol functionality.
 
-suite('StartDebuggerTool Integration (PowerShell)', () => {
-  test('starts debugger and captures breakpoint debug info', async function () {
+describe('startDebuggerTool Integration (PowerShell)', () => {
+  it('starts debugger and captures breakpoint debug info', async function () {
     // Skip PowerShell tests in CI - they require PowerShell runtime which may not be available
     // Node.js tests provide equivalent coverage for the debug adapter protocol functionality
     if (process.env.CI) {

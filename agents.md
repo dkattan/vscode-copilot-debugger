@@ -98,6 +98,7 @@ The debug tracker extension provides API services for monitoring debug sessions 
 - Use proper TypeScript typing and handle optional parameters carefully
 - VS Code's `startDebugging()` requires 2+ arguments - use conditional logic for optional parameters
 - Always validate workspace folder exists before debugging operations
+- **NO FALLBACK CODE**: Never implement fallback code or fallback logic. Fallback code hides underlying issues and makes debugging harder. If something fails, it should fail explicitly with a clear error message.
 
 ## External Dependencies
 

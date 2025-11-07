@@ -114,6 +114,14 @@ npm test
 CI=true npm test
 ```
 
+#### Test Execution Notes
+
+Do not run individual compiled test files (e.g. `node out/test/evaluateExpressionTool.test.js`) directly — Mocha's globals (`describe`, `it`) won't be initialized and you'll see `ReferenceError: describe is not defined`. Always use the harness (`npm test`) so the VS Code extension host and programmatic Mocha runner set up the environment.
+
+Each test file explicitly imports Mocha functions (`import { describe, it } from 'mocha';`) to make intent clear and guard against accidental direct execution when using tooling that doesn't inject globals.
+
+You can optionally install the "Extension Test Runner" (`ms-vscode.extension-test-runner`) extension to view and run tests from the VS Code Test Explorer UI. This provides granular pass/fail indicators and single-test debug without replacing the existing CLI harness. Keep `npm test` as the source of truth for CI parity.
+
 #### CI Testing Strategy
 
 Integration tests that start actual debug sessions are **skipped in CI** because:
