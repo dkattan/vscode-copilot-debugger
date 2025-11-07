@@ -1,11 +1,12 @@
+import * as path from 'node:path';
+import { it, suite } from 'mocha';
 import * as vscode from 'vscode';
-import * as path from 'path';
 import { StartDebuggerTool } from '../startDebuggerTool';
 import { resolveWorkspaceFolder } from './utils/debugTestUtils';
 import {
-  getExtensionRoot,
-  ensurePowerShellExtension,
   activateCopilotDebugger,
+  ensurePowerShellExtension,
+  getExtensionRoot,
   openScriptDocument,
 } from './utils/startDebuggerToolTestUtils';
 
@@ -40,7 +41,6 @@ suite('Conditional Breakpoint Integration (Unified)', () => {
       const hasPowerShell = await ensurePowerShellExtension();
       if (!hasPowerShell) {
         this.skip();
-        return;
       }
     }
     await activateCopilotDebugger();
@@ -64,7 +64,16 @@ suite('Conditional Breakpoint Integration (Unified)', () => {
       toolInvocationToken: undefined,
     });
 
-    const parts: any[] = (result as any).parts || (result as any).content || [];
+    interface ToolResultPart {
+      text?: string;
+      [key: string]: unknown;
+    }
+    const parts: ToolResultPart[] =
+      (result as { parts?: ToolResultPart[]; content?: ToolResultPart[] })
+        .content ||
+      (result as { parts?: ToolResultPart[]; content?: ToolResultPart[] })
+        .parts ||
+      [];
     const textOutput = parts
       .map(p => (p.text ? p.text : JSON.stringify(p)))
       .join('\n');
@@ -78,7 +87,7 @@ suite('Conditional Breakpoint Integration (Unified)', () => {
     if (/Error starting debug session/i.test(textOutput)) {
       throw new Error('Encountered error starting debug session');
     }
-    if (!/(Debug session .* stopped|breakpoint)/i.test(textOutput)) {
+    if (!/Debug session .* stopped|breakpoint/i.test(textOutput)) {
       throw new Error('Missing stopped-session or breakpoint descriptor');
     }
 
@@ -92,10 +101,12 @@ suite('Conditional Breakpoint Integration (Unified)', () => {
         // Check that we have variable info with $i
         if (debugInfo.variables && debugInfo.variables.variables) {
           const variables = debugInfo.variables.variables;
-          const iVariable = variables.find((v: any) => v.name === 'i');
+          const iVariable = variables.find(
+            (v: { name: string }) => v.name === 'i'
+          );
 
           if (iVariable) {
-            const iValue = parseInt(iVariable.value, 10);
+            const iValue = Number.parseInt(iVariable.value, 10);
             console.log(`Variable $i value: ${iValue}`);
 
             // Verify that $i is >= 3 (the condition we set)
@@ -116,7 +127,7 @@ suite('Conditional Breakpoint Integration (Unified)', () => {
     }
   });
 
-  test('hitCondition breakpoint triggers on specific hit count (pwsh fallback to node)', async function () {
+  it('hitCondition breakpoint triggers on specific hit count (pwsh fallback to node)', async function () {
     this.timeout(5000);
     const runtime = await chooseRuntime();
     const extensionRoot = getExtensionRoot();
@@ -132,7 +143,6 @@ suite('Conditional Breakpoint Integration (Unified)', () => {
       const hasPowerShell = await ensurePowerShellExtension();
       if (!hasPowerShell) {
         this.skip();
-        return;
       }
     }
     await activateCopilotDebugger();
@@ -156,7 +166,16 @@ suite('Conditional Breakpoint Integration (Unified)', () => {
       toolInvocationToken: undefined,
     });
 
-    const parts: any[] = (result as any).parts || (result as any).content || [];
+    interface ToolResultPart {
+      text?: string;
+      [key: string]: unknown;
+    }
+    const parts: ToolResultPart[] =
+      (result as { parts?: ToolResultPart[]; content?: ToolResultPart[] })
+        .content ||
+      (result as { parts?: ToolResultPart[]; content?: ToolResultPart[] })
+        .parts ||
+      [];
     const textOutput = parts
       .map(p => (p.text ? p.text : JSON.stringify(p)))
       .join('\n');
@@ -170,7 +189,7 @@ suite('Conditional Breakpoint Integration (Unified)', () => {
     if (/Error starting debug session/i.test(textOutput)) {
       throw new Error('Encountered error starting debug session');
     }
-    if (!/(Debug session .* stopped|breakpoint)/i.test(textOutput)) {
+    if (!/Debug session .* stopped|breakpoint/i.test(textOutput)) {
       throw new Error('Missing stopped-session or breakpoint descriptor');
     }
 
@@ -183,10 +202,12 @@ suite('Conditional Breakpoint Integration (Unified)', () => {
 
         if (debugInfo.variables && debugInfo.variables.variables) {
           const variables = debugInfo.variables.variables;
-          const iVariable = variables.find((v: any) => v.name === 'i');
+          const iVariable = variables.find(
+            (v: { name: string }) => v.name === 'i'
+          );
 
           if (iVariable) {
-            const iValue = parseInt(iVariable.value, 10);
+            const iValue = Number.parseInt(iVariable.value, 10);
             console.log(`Variable $i value at 3rd hit: ${iValue}`);
 
             // Should be at iteration 2 (3rd hit: 0, 1, 2)
@@ -206,7 +227,7 @@ suite('Conditional Breakpoint Integration (Unified)', () => {
     }
   });
 
-  test('logMessage breakpoint (logpoint) does not stop execution unless adapter treats it as breakpoint (pwsh fallback to node)', async function () {
+  it('logMessage breakpoint (logpoint) does not stop execution unless adapter treats it as breakpoint (pwsh fallback to node)', async function () {
     this.timeout(5000);
     const runtime = await chooseRuntime();
     const extensionRoot = getExtensionRoot();
@@ -225,7 +246,6 @@ suite('Conditional Breakpoint Integration (Unified)', () => {
       const hasPowerShell = await ensurePowerShellExtension();
       if (!hasPowerShell) {
         this.skip();
-        return;
       }
     }
     await activateCopilotDebugger();
@@ -251,7 +271,16 @@ suite('Conditional Breakpoint Integration (Unified)', () => {
       toolInvocationToken: undefined,
     });
 
-    const parts: any[] = (result as any).parts || (result as any).content || [];
+    interface ToolResultPart {
+      text?: string;
+      [key: string]: unknown;
+    }
+    const parts: ToolResultPart[] =
+      (result as { parts?: ToolResultPart[]; content?: ToolResultPart[] })
+        .content ||
+      (result as { parts?: ToolResultPart[]; content?: ToolResultPart[] })
+        .parts ||
+      [];
     const textOutput = parts
       .map(p => (p.text ? p.text : JSON.stringify(p)))
       .join('\n');
@@ -265,7 +294,7 @@ suite('Conditional Breakpoint Integration (Unified)', () => {
     if (/Error starting debug session/i.test(textOutput)) {
       throw new Error('Encountered error starting debug session');
     }
-    if (!/(Debug session .* stopped|breakpoint)/i.test(textOutput)) {
+    if (!/Debug session .* stopped|breakpoint/i.test(textOutput)) {
       throw new Error('Missing stopped-session or breakpoint descriptor');
     }
 
