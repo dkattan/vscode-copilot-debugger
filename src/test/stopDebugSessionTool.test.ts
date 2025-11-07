@@ -1,30 +1,62 @@
-import * as assert from 'assert';
-import { StopDebugSessionTool } from '../stopDebugSessionTool';
-import { StartDebuggerTool } from '../startDebuggerTool';
-import * as path from 'path';
+import type {
+  LanguageModelToolInvocationPrepareOptions,
+  PreparedToolInvocation,
+} from 'vscode';
+import * as assert from 'node:assert';
+import * as path from 'node:path';
+import { describe, it } from 'mocha';
 import * as vscode from 'vscode';
+import { StartDebuggerTool } from '../startDebuggerTool';
+import {
+  StopDebugSessionTool,
+  type StopDebugSessionToolParameters,
+} from '../stopDebugSessionTool';
 
-suite('StopDebugSessionTool', () => {
-  test('prepareInvocation includes session name', async () => {
+describe('stopDebugSessionTool', () => {
+  it('prepareInvocation includes session name', async () => {
     const tool = new StopDebugSessionTool();
     const maybePrepared = tool.prepareInvocation?.({
       input: { sessionName: 'MySession' },
-    } as any);
-    const prepared = await Promise.resolve(maybePrepared as any);
-    assert.ok(prepared.invocationMessage.includes('MySession'));
+    } as LanguageModelToolInvocationPrepareOptions<StopDebugSessionToolParameters>);
+    const prepared = await Promise.resolve(
+      maybePrepared as PreparedToolInvocation | undefined
+    );
+    assert.ok(prepared, 'Prepared invocation should be defined');
+    const message =
+      typeof prepared.invocationMessage === 'string'
+        ? prepared.invocationMessage
+        : prepared.invocationMessage?.value || '';
+    assert.ok(message.includes('MySession'));
   });
 
-  test('invoke reports no session when none running', async () => {
+  it('invoke reports no session when none running', async () => {
     const tool = new StopDebugSessionTool();
     const result = await tool.invoke({
       input: { sessionName: 'NotRunning' },
-    } as any);
-    const parts: any[] = (result as any).parts || [];
-    const combined = parts.map(p => p.text || '').join('\n');
+      toolInvocationToken: undefined,
+    });
+    // LanguageModelToolResult has a content array containing LanguageModelTextPart or unknown types
+    const parts = (result.content || []) as Array<{
+      text?: string;
+      value?: string;
+    }>;
+    const combined = parts
+      .map(p => {
+        if (typeof p === 'object' && p !== null) {
+          if ('text' in p) {
+            return (p as { text?: string }).text;
+          }
+          if ('value' in p) {
+            return (p as { value?: string }).value;
+          }
+        }
+        return JSON.stringify(p);
+      })
+      .join('\n');
     assert.ok(/No debug session\(s\) found/i.test(combined));
   });
 
-  test('start then stop session', async function () {
+  it('start then stop session', async function () {
     this.timeout(5000);
     const extensionRoot =
       vscode.extensions.getExtension('dkattan.copilot-breakpoint-debugger')
@@ -38,13 +70,27 @@ suite('StopDebugSessionTool', () => {
         timeout_seconds: 30,
         breakpointConfig: { breakpoints: [{ path: jsPath, line: 5 }] },
       },
-    } as any);
-    const startText = (startResult as any).parts
-      .map((p: any) => p.text || '')
+      toolInvocationToken: undefined,
+    });
+    const startParts = (startResult.content || []) as Array<{
+      text?: string;
+      value?: string;
+    }>;
+    const startText = startParts
+      .map(p => {
+        if (typeof p === 'object' && p !== null) {
+          if ('text' in p) {
+            return (p as { text?: string }).text;
+          }
+          if ('value' in p) {
+            return (p as { value?: string }).value;
+          }
+        }
+        return JSON.stringify(p);
+      })
       .join('\n');
     if (/timed out/i.test(startText)) {
       this.skip();
-      return;
     }
     // Extract session name from start output (best-effort)
     const match = startText.match(/Debug session (.*?) stopped/);
@@ -52,9 +98,24 @@ suite('StopDebugSessionTool', () => {
     const stopTool = new StopDebugSessionTool();
     const stopResult = await stopTool.invoke({
       input: { sessionName },
-    } as any);
-    const stopText = (stopResult as any).parts
-      .map((p: any) => p.text || '')
+      toolInvocationToken: undefined,
+    });
+    const stopParts = (stopResult.content || []) as Array<{
+      text?: string;
+      value?: string;
+    }>;
+    const stopText = stopParts
+      .map(p => {
+        if (typeof p === 'object' && p !== null) {
+          if ('text' in p) {
+            return (p as { text?: string }).text;
+          }
+          if ('value' in p) {
+            return (p as { value?: string }).value;
+          }
+        }
+        return JSON.stringify(p);
+      })
       .join('\n');
     assert.ok(/Stopped debug session\(s\)/i.test(stopText));
   });
