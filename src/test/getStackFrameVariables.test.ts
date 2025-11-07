@@ -1,55 +1,65 @@
-import { getStackFrameVariables } from '../inspection';
+import type * as vscode from 'vscode';
+import * as assert from 'node:assert';
+import { it, setup, suite } from 'mocha';
 import { activeSessions } from '../common';
-import * as assert from 'assert';
-
-class MockDebugSession {
-  id = 'mock-session';
-  name = 'mock';
-  type = 'mockType';
-  workspaceFolder = undefined;
-  configuration: any = {};
-  customRequest(method: string, args?: any): any {
-    if (method === 'scopes') {
-      return {
-        scopes: [
-          { name: 'Local', variablesReference: 1 },
-          { name: 'Empty', variablesReference: 0 },
-        ],
-      };
-    }
-    if (method === 'variables') {
-      if (args?.variablesReference === 1) {
-        return {
-          variables: [
-            { name: 'alpha', value: '1' },
-            { name: 'beta', value: '2' },
-            { name: 'gamma', value: '3' },
-          ],
-        };
-      }
-      return { variables: [] };
-    }
-    throw new Error(`Unexpected method ${method}`);
-  }
-}
+import { getStackFrameVariables } from '../inspection';
 
 suite('getStackFrameVariables filter behavior', () => {
   setup(() => {
     // Clear and insert mock session
     activeSessions.splice(0, activeSessions.length);
-    activeSessions.push(new MockDebugSession() as any);
+    activeSessions.push({
+      id: 'mock-session',
+      name: 'mock',
+      type: 'mockType',
+      workspaceFolder: undefined,
+      configuration: {},
+      customRequest: (
+        method: string,
+        args?: { variablesReference?: number }
+      ) => {
+        if (method === 'scopes') {
+          return {
+            scopes: [
+              { name: 'Local', variablesReference: 1 },
+              { name: 'Empty', variablesReference: 0 },
+            ],
+          };
+        }
+        if (method === 'variables') {
+          if (args?.variablesReference === 1) {
+            return {
+              variables: [
+                { name: 'alpha', value: '1' },
+                { name: 'beta', value: '2' },
+                { name: 'gamma', value: '3' },
+              ],
+            };
+          }
+          return { variables: [] };
+        }
+        throw new Error(`Unexpected method ${method}`);
+      },
+    } as unknown as vscode.DebugSession);
   });
 
-  test('returns all variables when no filter provided', async () => {
-    const result: any = await getStackFrameVariables({
+  it('returns all variables when no filter provided', async () => {
+    const result = await getStackFrameVariables({
       sessionId: 'mock-session',
       frameId: 10,
       threadId: 1,
     });
     assert.strictEqual(result.isError, false, 'Result should not be error');
+    if (result.isError) {
+      throw new Error('Result should not be error');
+    }
     const json = result.content[0].json;
+    interface ScopeWithVariables {
+      scopeName: string;
+      variables: Array<{ name: string; value: string }>;
+    }
     const localScope = json.variablesByScope.find(
-      (s: any) => s.scopeName === 'Local'
+      (s: ScopeWithVariables) => s.scopeName === 'Local'
     );
     assert.ok(localScope, 'Local scope missing');
     assert.strictEqual(
@@ -59,20 +69,29 @@ suite('getStackFrameVariables filter behavior', () => {
     );
   });
 
-  test('filters variables by regex fragments', async () => {
-    const result: any = await getStackFrameVariables({
+  it('filters variables by regex fragments', async () => {
+    const result = await getStackFrameVariables({
       sessionId: 'mock-session',
       frameId: 10,
       threadId: 1,
       filter: 'alpha|gamma',
     });
     assert.strictEqual(result.isError, false, 'Result should not be error');
+    if (result.isError) {
+      throw new Error('Result should not be error');
+    }
     const json = result.content[0].json;
+    interface ScopeWithVariables {
+      scopeName: string;
+      variables: Array<{ name: string; value: string }>;
+    }
     const localScope = json.variablesByScope.find(
-      (s: any) => s.scopeName === 'Local'
+      (s: ScopeWithVariables) => s.scopeName === 'Local'
     );
     assert.ok(localScope, 'Local scope missing');
-    const names = localScope.variables.map((v: any) => v.name).sort();
+    const names = localScope.variables
+      .map((v: { name: string }) => v.name)
+      .sort();
     assert.deepStrictEqual(
       names,
       ['alpha', 'gamma'],
@@ -80,17 +99,24 @@ suite('getStackFrameVariables filter behavior', () => {
     );
   });
 
-  test('filter excluding all yields empty array', async () => {
-    const result: any = await getStackFrameVariables({
+  it('filter excluding all yields empty array', async () => {
+    const result = await getStackFrameVariables({
       sessionId: 'mock-session',
       frameId: 10,
       threadId: 1,
       filter: 'delta',
     });
     assert.strictEqual(result.isError, false, 'Result should not be error');
+    if (result.isError) {
+      throw new Error('Result should not be error');
+    }
     const json = result.content[0].json;
+    interface ScopeWithVariables {
+      scopeName: string;
+      variables: Array<{ name: string; value: string }>;
+    }
     const localScope = json.variablesByScope.find(
-      (s: any) => s.scopeName === 'Local'
+      (s: ScopeWithVariables) => s.scopeName === 'Local'
     );
     assert.ok(localScope, 'Local scope missing');
     assert.strictEqual(
